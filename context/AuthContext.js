@@ -8,48 +8,58 @@ export const AuthProvider = ({ children }) => {
   const [userToken, setUserToken] = useState(null);
   const [userInfo, setUserInfo] = useState(null);
 
-  // 🔐 Fonction d'inscription avec FormData
+  // 🔄 Récupérer les infos utilisateur depuis /me
+  const fetchUserProfile = async (token) => {
+    try {
+      const res = await axios.get('http://192.168.1.173:3000/api/users/me', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setUserInfo(res.data);
+      await AsyncStorage.setItem('user', JSON.stringify(res.data));
+    } catch (error) {
+      console.log('Erreur récupération profil:', error.response?.data || error.message);
+    }
+  };
+
+  // 🔐 Inscription (chauffeur ou passager)
   const register = async (nom, email, motdepasse, role, docs = {}) => {
     try {
       const formData = new FormData();
-
       formData.append('nom', nom);
       formData.append('email', email);
       formData.append('motDePasse', motdepasse);
       formData.append('role', role);
 
       if (role === 'chauffeur') {
-        if (docs.permis) {
+        if (docs.permis)
           formData.append('permis', {
             uri: docs.permis,
             name: 'permis.jpg',
             type: 'image/jpeg',
           });
-        }
 
-        if (docs.assurance) {
+        if (docs.assurance)
           formData.append('assurance', {
             uri: docs.assurance,
             name: 'assurance.jpg',
             type: 'image/jpeg',
           });
-        }
 
-        if (docs.carteGrise) {
+        if (docs.carteGrise)
           formData.append('carteGrise', {
             uri: docs.carteGrise,
             name: 'carteGrise.jpg',
             type: 'image/jpeg',
           });
-        }
 
-        if (docs.photoVoiture) {
+        if (docs.photoVoiture)
           formData.append('photoVoiture', {
             uri: docs.photoVoiture,
             name: 'photoVoiture.jpg',
             type: 'image/jpeg',
           });
-        }
       }
 
       const res = await axios.post('http://192.168.1.173:3000/api/users/register', formData, {
@@ -58,12 +68,12 @@ export const AuthProvider = ({ children }) => {
         },
       });
 
-      const { token, user } = res.data;
-
+      const { token } = res.data;
       setUserToken(token);
-      setUserInfo(user);
       await AsyncStorage.setItem('token', token);
-      await AsyncStorage.setItem('user', JSON.stringify(user));
+
+      // 🔁 Récupération profil à jour
+      await fetchUserProfile(token);
     } catch (error) {
       console.log('Erreur inscription:', error.response?.data || error.message);
       alert("Erreur à l'inscription. Vérifie les champs et fichiers.");
@@ -78,13 +88,12 @@ export const AuthProvider = ({ children }) => {
         motdepasse,
       });
 
-      const { token, user } = res.data;
-
+      const { token } = res.data;
       setUserToken(token);
-      setUserInfo(user);
-
       await AsyncStorage.setItem('token', token);
-      await AsyncStorage.setItem('user', JSON.stringify(user));
+
+      // 🔁 Récupération profil à jour
+      await fetchUserProfile(token);
     } catch (error) {
       console.log('Erreur connexion:', error.response?.data || error.message);
       alert("Email ou mot de passe incorrect");
@@ -99,15 +108,13 @@ export const AuthProvider = ({ children }) => {
     await AsyncStorage.removeItem('user');
   };
 
-  // 🔄 Vérification auto
+  // 🔁 Vérifie connexion automatique
   const isLoggedIn = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-      const user = await AsyncStorage.getItem('user');
-
-      if (token && user) {
+      if (token) {
         setUserToken(token);
-        setUserInfo(JSON.parse(user));
+        await fetchUserProfile(token);
       }
     } catch (error) {
       console.log('Erreur stockage local :', error);

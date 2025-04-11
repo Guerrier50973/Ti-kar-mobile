@@ -3,17 +3,31 @@ import { View, Text, Button, StyleSheet } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 
 const ProfileScreen = ({ navigation }) => {
-  const { logout } = useContext(AuthContext);
+  const { logout, userInfo } = useContext(AuthContext);
 
   const handleLogout = () => {
-    logout(); // supprime le token
-    navigation.replace('Login'); // redirige vers la page login
+    logout();
+    navigation.replace('Login');
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>👤 Mon profil</Text>
-      <Text style={styles.subtitle}>Bienvenue sur Ti-Kar !</Text>
+
+      {userInfo ? (
+        <>
+          <Text style={styles.label}>Nom :</Text>
+          <Text style={styles.value}>{userInfo.nom}</Text>
+
+          <Text style={styles.label}>Email :</Text>
+          <Text style={styles.value}>{userInfo.email}</Text>
+
+          <Text style={styles.label}>Rôle :</Text>
+          <Text style={styles.value}>{userInfo.role}</Text>
+        </>
+      ) : (
+        <Text style={{ marginTop: 20 }}>Chargement des informations...</Text>
+      )}
 
       <View style={{ marginTop: 30 }}>
         <Button title="Se déconnecter" onPress={handleLogout} color="tomato" />
@@ -31,11 +45,16 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 26,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 30,
   },
-  subtitle: {
+  label: {
     fontSize: 16,
-    color: '#666',
+    fontWeight: '600',
+    marginTop: 10,
+  },
+  value: {
+    fontSize: 16,
+    color: '#444',
   },
 });
 

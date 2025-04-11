@@ -14,11 +14,27 @@ const CreateTrajetScreen = ({ navigation }) => {
 
   const isVtc = userInfo?.role === 'vtc';
 
+  // ✅ Fonctions de validation
+  const isValidDate = (input) => /^\d{4}-\d{2}-\d{2}$/.test(input); // YYYY-MM-DD
+  const isValidHeure = (input) => /^([01]\d|2[0-3]):([0-5]\d)$/.test(input); // HH:mm
+
   const handleCreate = async () => {
+    // ✅ Vérif des champs requis
     if (!lieuDepart || !lieuArrivee || !date || !heure) {
       return Alert.alert('Champs requis', 'Veuillez remplir tous les champs.');
     }
 
+    // ✅ Vérif format date
+    if (!isValidDate(date)) {
+      return Alert.alert('Format invalide', '📅 La date doit être au format : YYYY-MM-DD (ex: 2025-04-10)');
+    }
+
+    // ✅ Vérif format heure
+    if (!isValidHeure(heure)) {
+      return Alert.alert('Format invalide', '🕒 L’heure doit être au format : HH:mm (ex: 14:00)');
+    }
+
+    // ✅ Vérif places si covoiturage
     if (!isVtc && !places) {
       return Alert.alert('Places manquantes', 'Indique le nombre de places pour le covoiturage.');
     }
@@ -30,25 +46,25 @@ const CreateTrajetScreen = ({ navigation }) => {
         date,
         heure,
         ...(prix && { prix: parseFloat(prix) }),
-        ...(!isVtc && { places: parseInt(places) })
+        ...(!isVtc && { places: parseInt(places) }),
       };
 
       const route = isVtc ? 'vtc' : 'covoiturage';
+
+      console.log('📦 Payload envoyé :', payload);
 
       const res = await axios.post(
         `http://192.168.1.173:3000/api/trajets/${route}`,
         payload,
         {
-          headers: { Authorization: `Bearer ${userToken}` }
+          headers: { Authorization: `Bearer ${userToken}` },
         }
       );
 
-      // ✅ Aller vers l'écran de confirmation avec les données
       navigation.navigate('TrajetConfirmation', { trajet: res.data.trajet });
-
     } catch (err) {
-      console.error('❌ Erreur createTrajet :', err.response?.data || err.message);
-      Alert.alert('Erreur', 'Impossible de créer le trajet.');
+      console.error('❌ Erreur createTrajet :', JSON.stringify(err.response?.data, null, 2));
+      Alert.alert('Erreur', err.response?.data?.message || 'Impossible de créer le trajet.');
     }
   };
 
@@ -58,30 +74,10 @@ const CreateTrajetScreen = ({ navigation }) => {
         {isVtc ? '🚘 Trajet VTC (Professionnel)' : '🤝 Trajet Covoiturage'}
       </Text>
 
-      <TextInput
-        placeholder="Ville de départ"
-        value={lieuDepart}
-        onChangeText={setLieuDepart}
-        style={styles.input}
-      />
-      <TextInput
-        placeholder="Ville d’arrivée"
-        value={lieuArrivee}
-        onChangeText={setLieuArrivee}
-        style={styles.input}
-      />
-      <TextInput
-        placeholder="Date (ex: 2025-04-10)"
-        value={date}
-        onChangeText={setDate}
-        style={styles.input}
-      />
-      <TextInput
-        placeholder="Heure (ex: 14:00)"
-        value={heure}
-        onChangeText={setHeure}
-        style={styles.input}
-      />
+      <TextInput placeholder="Ville de départ" value={lieuDepart} onChangeText={setLieuDepart} style={styles.input} />
+      <TextInput placeholder="Ville d’arrivée" value={lieuArrivee} onChangeText={setLieuArrivee} style={styles.input} />
+      <TextInput placeholder="Date (ex: 2025-04-10)" value={date} onChangeText={setDate} style={styles.input} />
+      <TextInput placeholder="Heure (ex: 14:00)" value={heure} onChangeText={setHeure} style={styles.input} />
 
       {!isVtc && (
         <TextInput
